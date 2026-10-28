@@ -167,7 +167,10 @@ def discover_banks(root: Path) -> List[Path]:
     if not root.is_dir():
         return candidates
     for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = sorted(d for d in dirnames if d not in _SKIP_DIR_NAMES)
+        dirnames[:] = sorted(
+            d for d in dirnames
+            if d not in _SKIP_DIR_NAMES and not d.endswith(".partial")
+        )
         for filename in sorted(filenames):
             if not filename.endswith(".db"):
                 continue

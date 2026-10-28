@@ -17,6 +17,7 @@ than a slogan:
 """
 
 import hashlib
+import logging
 import re
 import sqlite3
 from datetime import datetime, timedelta
@@ -520,16 +521,34 @@ class TestReadOnly:
         assert report["banks_scanned"] == 0
         assert report["unreadable"] == []
 
-    def test_cache_and_backup_dirs_are_pruned(self, fleet_env):
-        _build_fleet(fleet_env, {"home-a": [_TWIN + (None,)]})
+    def test_partial_snapshot_dirs_are_pruned_without_hiding_completed_banks(
+            self, fleet_env, caplog):
+        productive = _make_bank(
+            fleet_env / "profiles" / "active" / "mnemosyne" / "data" / "mnemosyne.db",
+            [_TWIN + (None,)],
+        )
+        completed_snapshot = _make_bank(
+            fleet_env / "state-snapshots" / "snapshot-20261028" / "mnemosyne.db",
+            [("cf_completed_a", "cf_completed_b", None)],
+        )
+        partial = (
+            fleet_env / "state-snapshots" /
+            ".20261028-123456-pre-update.123456.partial" / "state.db"
+        )
+        partial.parent.mkdir(parents=True)
+        partial.write_bytes(b"this is not a sqlite file" * 40)
         for dirname in ("backups", "cache", ".cache"):
             _make_bank(fleet_env / dirname / "old" / "mnemosyne.db", [_TWIN + (None,)])
 
-        report = fleet_census.census()
+        with caplog.at_level(logging.WARNING, logger=fleet_census.__name__):
+            report = fleet_census.census()
 
-        # Had the copies been counted, this would be a 4-bank home↔home twin.
-        assert report["banks_scanned"] == 1
-        assert report["home_home_twin_count"] == 0
+        assert {Path(bank["path"]) for bank in report["banks"]} == {
+            productive,
+            completed_snapshot,
+        }
+        assert report["unreadable"] == []
+        assert str(partial) not in caplog.text
 
 
 # --------------------------------------------------------------------------
