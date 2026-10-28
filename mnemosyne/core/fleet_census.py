@@ -166,9 +166,8 @@ def discover_banks(root: Path) -> List[Path]:
     candidates: List[Path] = []
     if not root.is_dir():
         return candidates
-    snapshot_root = root / "state-snapshots"
     for dirpath, dirnames, filenames in os.walk(root):
-        in_snapshot_tree = Path(dirpath).is_relative_to(snapshot_root)
+        in_snapshot_tree = "state-snapshots" in Path(dirpath).parts
         dirnames[:] = sorted(
             d for d in dirnames
             if d not in _SKIP_DIR_NAMES

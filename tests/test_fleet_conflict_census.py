@@ -545,6 +545,12 @@ class TestReadOnly:
         )
         partial.parent.mkdir(parents=True)
         partial.write_bytes(b"this is not a sqlite file" * 40)
+        profile_partial = (
+            fleet_env / "profiles" / "active" / "state-snapshots" /
+            ".20261028-123456-pre-update.123456.partial" / "state.db"
+        )
+        profile_partial.parent.mkdir(parents=True)
+        profile_partial.write_bytes(b"this is not a sqlite file" * 40)
         for dirname in ("backups", "cache", ".cache"):
             _make_bank(fleet_env / dirname / "old" / "mnemosyne.db", [_TWIN + (None,)])
 
@@ -559,6 +565,15 @@ class TestReadOnly:
         }
         assert report["unreadable"] == []
         assert str(partial) not in caplog.text
+        assert str(profile_partial) not in caplog.text
+
+    def test_partial_snapshot_dirs_are_pruned_when_root_is_snapshot_dir(self, tmp_path):
+        snapshot_root = tmp_path / "state-snapshots"
+        partial = snapshot_root / "pre-update.partial" / "state.db"
+        partial.parent.mkdir(parents=True)
+        partial.write_bytes(b"this is not a sqlite file" * 40)
+
+        assert fleet_census.discover_banks(snapshot_root) == []
 
 
 # --------------------------------------------------------------------------
