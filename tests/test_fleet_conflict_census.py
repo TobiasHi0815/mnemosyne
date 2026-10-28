@@ -575,6 +575,15 @@ class TestReadOnly:
 
         assert fleet_census.discover_banks(snapshot_root) == []
 
+    def test_snapshot_ancestor_does_not_hide_live_partial_dir(self, tmp_path):
+        root = tmp_path / "state-snapshots" / "fleet"
+        productive = _make_bank(
+            root / "live.partial" / "mnemosyne.db",
+            [("cf_live_partial_a", "cf_live_partial_b", None)],
+        )
+
+        assert fleet_census.discover_banks(root) == [productive]
+
 
 # --------------------------------------------------------------------------
 # 3. The clock seam
