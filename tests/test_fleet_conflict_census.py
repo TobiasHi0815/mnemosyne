@@ -527,9 +527,17 @@ class TestReadOnly:
             fleet_env / "profiles" / "active" / "mnemosyne" / "data" / "mnemosyne.db",
             [_TWIN + (None,)],
         )
+        productive_with_partial_dir = _make_bank(
+            fleet_env / "profiles" / "active" / "mnemosyne" / "data.partial" / "mnemosyne.db",
+            [("cf_productive_partial_a", "cf_productive_partial_b", None)],
+        )
         completed_snapshot = _make_bank(
             fleet_env / "state-snapshots" / "snapshot-20261028" / "mnemosyne.db",
             [("cf_completed_a", "cf_completed_b", None)],
+        )
+        completed_snapshot_with_partial_in_name = _make_bank(
+            fleet_env / "state-snapshots" / "snapshot.partial.backup" / "mnemosyne.db",
+            [("cf_completed_partial_a", "cf_completed_partial_b", None)],
         )
         partial = (
             fleet_env / "state-snapshots" /
@@ -545,7 +553,9 @@ class TestReadOnly:
 
         assert {Path(bank["path"]) for bank in report["banks"]} == {
             productive,
+            productive_with_partial_dir,
             completed_snapshot,
+            completed_snapshot_with_partial_in_name,
         }
         assert report["unreadable"] == []
         assert str(partial) not in caplog.text
